@@ -4,15 +4,16 @@ pipeline {
     environment {
         DOCKER_IMAGE = "my-app"
         SONARQUBE_SERVER = "sonarqube"
+        SONAR_AUTH_TOKEN = credentials('sonarcube') // Make sure you have this in Jenkins credentials
     }
+
     stages {
 
         stage('Clean Workspace') {
             steps {
                 deleteDir()
             }
-
-    stages {
+        }
 
         stage('Checkout Code') {
             steps {
