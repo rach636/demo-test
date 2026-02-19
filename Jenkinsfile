@@ -5,6 +5,12 @@ pipeline {
         DOCKER_IMAGE = "my-app"
         SONARQUBE_SERVER = "sonarqube"
     }
+    stages {
+
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
 
     stages {
 
