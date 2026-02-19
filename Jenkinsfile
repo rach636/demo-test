@@ -4,34 +4,22 @@ pipeline {
     environment {
         DOCKER_IMAGE = "my-app"
         SONARQUBE_SERVER = "sonarqube"
-        SONAR_AUTH_TOKEN = credentials('sonarcube') // Make sure you have this in Jenkins credentials
+        SONAR_AUTH_TOKEN = credentials('sonarcube') // Jenkins credentials
     }
 
     stages {
-
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
-        }
-
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/rach636/demo-test.git'
-            }
-        }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                     docker run --rm \
-                    -e SONAR_HOST_URL=http://host.docker.internal:9000 \
-                    -e SONAR_LOGIN=$SONAR_AUTH_TOKEN \
-                    -v $(pwd):/usr/src \
-                    sonarsource/sonar-scanner-cli \
-                    -Dsonar.projectKey=my-app \
-                    -Dsonar.sources=.
+                        -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+                        -e SONAR_LOGIN=$SONAR_AUTH_TOKEN \
+                        -v $(pwd):/usr/src \
+                        sonarsource/sonar-scanner-cli \
+                        -Dsonar.projectKey=my-app \
+                        -Dsonar.sources=.
                     '''
                 }
             }
