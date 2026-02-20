@@ -14,7 +14,14 @@ pipeline {
                 sh 'docker build -t ${DOCKER_IMAGE} .'
             }
         }
-
+    stage('Trivy Security Scan') {
+            steps {
+                sh '''
+                echo "Scanning Docker image ${DOCKER_IMAGE} for vulnerabilities..."
+                trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_IMAGE}
+                '''
+            }
+        }    
         stage('Run Container') {
             steps {
                 sh '''
