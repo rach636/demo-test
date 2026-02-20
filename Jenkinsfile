@@ -6,9 +6,22 @@ pipeline {
         AWS_REGION   = "ap-south-1"
         ECR_URI      = "035736213603.dkr.ecr.ap-south-1.amazonaws.com/my-app"
         TERRAFORM_DIR = "terraform"
+        SONARQUBE_SERVER  = 'http://localhost:9000/:9000'
+        SONARQUBE_TOKEN   = credentials('sonarcube')
     }
 
     stages {
+        stage('SonarQube Scan') {
+            steps {
+                sh """
+                sonar-scanner \
+                  -Dsonar.projectKey=my-app \
+                  -Dsonar.sources=. \
+                  -Dsonar.host.url=${SONARQUBE_SERVER} \
+                  -Dsonar.login=${SONARQUBE_TOKEN}
+                """
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
