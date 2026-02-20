@@ -66,7 +66,7 @@ pipeline {
             steps {
                 dir("${TERRAFORM_DIR}") {
                     withAWS(region: "${AWS_REGION}", credentials: 'aws-creds-id') {
-                        sh 'terraform apply -auto-approve tfplan'
+                        sh 'terraform destroy -auto-approve tfplan'
                     }
                 }
             }
