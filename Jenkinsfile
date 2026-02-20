@@ -3,12 +3,15 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "my-app"
+        AWS_REGION = "ap-south-1"
+        ECR_URI = "035736213603.dkr.ecr.ap-south-1.amazonaws.com/my-app"
     }
 
     stages {
+
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t my-app .'
+                sh 'docker build -t ${DOCKER_IMAGE} .'
             }
         }
 
@@ -17,8 +20,21 @@ pipeline {
                 sh '''
                 docker stop my-app || true
                 docker rm my-app || true
-                docker run -d -p 8082:80 --name my-app my-app
+                docker run -d -p 8082:80 --name my-app ${DOCKER_IMAGE}
                 '''
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                withAWS(region: "${AWS_REGION}", credentials: 'aws-creds-id') {
+                    sh '''
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login --username AWS --password-stdin ${ECR_URI}
+                    docker tag ${DOCKER_IMAGE}:latest ${ECR_URI}:latest
+                    docker push ${ECR_URI}:latest
+                    '''
+                }
             }
         }
 
