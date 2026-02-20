@@ -3,37 +3,32 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "my-app"
-        AWS_REGION = "ap-south-1"
-        ECR_URI = "035736213603.dkr.ecr.ap-south-1.amazonaws.com/my-app"
+        AWS_REGION   = "ap-south-1"
+        ECR_URI      = "035736213603.dkr.ecr.ap-south-1.amazonaws.com/my-app"
+        TF_DIR       = "terraform" // Terraform folder in your repo
     }
 
     stages {
 
         stage('Build Docker Image') {
             steps {
+                echo "Building Docker image..."
                 sh 'docker build -t ${DOCKER_IMAGE} .'
             }
         }
-    stage('Trivy Security Scan') {
+
+        stage('Trivy Security Scan') {
             steps {
+                echo "Running Trivy scan (HIGH & CRITICAL vulnerabilities)..."
                 sh '''
-                echo "Scanning Docker image ${DOCKER_IMAGE} for vulnerabilities..."
                 trivy image --severity HIGH,CRITICAL --exit-code 1 ${DOCKER_IMAGE}
-                '''
-            }
-        }    
-        stage('Run Container') {
-            steps {
-                sh '''
-                docker stop my-app || true
-                docker rm my-app || true
-                docker run -d -p 8082:80 --name my-app ${DOCKER_IMAGE}
                 '''
             }
         }
 
-        stage('Push to ECR') {
+        stage('Push Docker Image to ECR') {
             steps {
+                echo "Pushing Docker image to AWS ECR..."
                 withAWS(region: "${AWS_REGION}", credentials: 'aws-creds-id') {
                     sh '''
                     aws ecr get-login-password --region ${AWS_REGION} | \
@@ -45,5 +40,32 @@ pipeline {
             }
         }
 
+        stage('Deploy ECS Fargate via Terraform (Default VPC)') {
+            steps {
+                echo "Deploying ECS Fargate service using Terraform in default VPC..."
+                dir("${TF_DIR}") {
+                    withAWS(region: "${AWS_REGION}", credentials: 'aws-creds-id') {
+                        sh '''
+                        terraform init
+                        terraform apply -auto-approve
+                        '''
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+        always {
+            echo "Pipeline finished. Listing Docker images..."
+            sh 'docker images'
+        }
+        failure {
+            echo "Pipeline failed! Check logs for Trivy scan or Terraform errors."
+        }
+        success {
+            echo "Pipeline completed successfully! ECS Fargate service updated."
+        }
     }
 }
