@@ -11,8 +11,14 @@ pipeline {
     stages {
         stage('SonarQube Scan') {
             steps {
-                withSonarQubeEnv('sonarqube') { // Name configured in Jenkins global settings
-                    sh 'sonar-scanner -Dsonar.projectKey=my-app -Dsonar.sources=.'
+                withSonarQubeEnv('sonarqube') { // Name of your SonarQube configuration in Jenkins
+                    sh '''
+                    docker run --rm -v $WORKSPACE:/usr/src -w /usr/src sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=my-app \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
                 }
             }
         }
