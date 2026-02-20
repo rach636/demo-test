@@ -46,6 +46,12 @@ resource "aws_ecs_cluster" "main" {
   region = var.aws_region
 }
 
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/my-app"
+  retention_in_days = 14
+}
+
 # IAM Role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole"
@@ -77,19 +83,25 @@ resource "aws_ecs_task_definition" "app" {
 
   execution_role_arn = aws_iam_role.ecs_task_execution.arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "my-app"
-      image     = var.docker_image
-      essential = true
-      portMappings = [
-        {
-          containerPort = 80
-          hostPort      = 80
-        }
-      ]
+  container_definitions = jsonencode([{
+    name      = "my-app"
+    image     = var.docker_image
+    essential = true
+    portMappings = [
+      {
+        containerPort = 80
+        hostPort      = 80
+      }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "ecs"
+      }
     }
-  ])
+  }])
 }
 
 # ECS Service
